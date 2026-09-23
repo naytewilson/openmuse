@@ -115,7 +115,6 @@ test("CopilotKit model worker executes server tools and persists the confirmed o
   }
 });
 
-
 test("raw AG-UI chat mode does not silently route durable work through MODEL", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "openmuse-agui-durable-"));
   const db = await createStore();
