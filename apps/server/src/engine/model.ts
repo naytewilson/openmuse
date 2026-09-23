@@ -16,6 +16,14 @@ export async function executeModelTask(
   ctx: TaskContext,
 ): Promise<Partial<AgentTask>> {
   const config = service.config;
+  const taskAgentBackend =
+    config.taskAgentBackend ?? (config.agentBackend === "agui" ? "disabled" : "model");
+  if (taskAgentBackend === "disabled")
+    return {
+      status: "waiting_input",
+      question:
+        "Durable open-ended agent execution is disabled for this deployment. AGENT_BACKEND=agui routes conversation only. To deliberately use OpenMuse's built-in durable model worker, set TASK_AGENT_BACKEND=model together with MODEL and its provider configuration.",
+    };
   if (!config.model)
     return {
       status: "waiting_input",
