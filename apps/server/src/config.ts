@@ -16,6 +16,7 @@ export interface Config {
   encryptionKey?: string;
   model?: string;
   agentBackend: "sample" | "model" | "agui";
+  taskAgentBackend?: "model" | "disabled";
   agentUrl?: string;
   agentToken?: string;
   intelligenceApiKey?: string;
@@ -52,6 +53,10 @@ export function readConfig(): Config {
     throw new Error("AGENT_BACKEND must be sample, model or agui");
   if (mode === "live" && backend === "sample")
     throw new Error("Live workspaces cannot use the sample agent");
+  const taskAgentBackend =
+    process.env.TASK_AGENT_BACKEND ?? (backend === "agui" ? "disabled" : "model");
+  if (taskAgentBackend !== "model" && taskAgentBackend !== "disabled")
+    throw new Error("TASK_AGENT_BACKEND must be model or disabled");
   const port = Number(process.env.PORT ?? 8787);
   const publicUrl = process.env.PUBLIC_API_URL ?? `http://localhost:${port}`;
   const config: Config = {
@@ -65,6 +70,7 @@ export function readConfig(): Config {
     encryptionKey: process.env.TOKEN_ENCRYPTION_KEY,
     model: process.env.MODEL,
     agentBackend: backend,
+    taskAgentBackend,
     agentUrl: process.env.AGENT_URL,
     agentToken: process.env.AGENT_TOKEN,
     intelligenceApiKey: process.env.CPK_INTELLIGENCE_API_KEY,
