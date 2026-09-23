@@ -114,3 +114,37 @@ test("CopilotKit model worker executes server tools and persists the confirmed o
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+
+test("raw AG-UI chat mode does not silently route durable work through MODEL", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "openmuse-agui-durable-"));
+  const db = await createStore();
+  const { requests } = await modelFixture(t, () => undefined);
+  const server = await createApp(db, {
+    mode: "sample",
+    port: 8787,
+    host: "127.0.0.1",
+    publicUrl: "http://localhost:8787",
+    dataDir: directory,
+    agentBackend: "agui",
+    agentUrl: "http://127.0.0.1:1/conversation-only",
+    model: "openai/fixture",
+    googleRedirectUri: "http://localhost:8787/api/google/callback",
+    allowedOrigins: [],
+  });
+  try {
+    const task = await server.agent.createTask("owner", {
+      prompt: "Investigate this in the background",
+      kind: "agent",
+    });
+    await server.agent.worker.tick();
+    const saved = await server.agent.getTask("owner", task.id);
+    assert.equal(saved.status, "waiting_input", saved.error ?? saved.question);
+    assert.match(saved.question ?? "", /TASK_AGENT_BACKEND=model/);
+    assert.equal(requests.length, 0, "durable work must not leak to MODEL implicitly");
+  } finally {
+    await server.agent.stop();
+    await db.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
